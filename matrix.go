@@ -6,8 +6,10 @@ import (
 )
 
 type Number interface {
-	float64 | int64 | uint64
+	float64 | int64 | uint64 | int
 }
+
+type Vector[N Number] Matrix[N]
 
 type Matrix[N Number] struct {
 	rows uint
@@ -19,12 +21,13 @@ func (this *Matrix[T]) GetDimensions() (uint, uint) {
 	return this.rows, this.cols
 }
 
-func Create[T Number](matrix [][]T) *Matrix[T] {
+func CreateMatrix[T Number](matrix [][]T) *Matrix[T] {
 	if len(matrix) == 0 {
 		panic("Cannot create an empty matrix.")
 	}
 	rows := len(matrix)
 	cols := len(matrix[0])
+
 	return &Matrix[T]{
 		rows: uint(rows),
 		cols: uint(cols),
@@ -45,7 +48,25 @@ func (this *Matrix[T]) GetRow(idx uint) []T {
 	return this.data[idx]
 }
 
-func dot[T Number](u []T, v []T) T {
+func GenerateRandomMatrix[N Number](rows uint, cols uint, randomSupplier func() N) *Matrix[N] {
+	mat := make([][]N, rows)
+	for i := range mat {
+		mat[i] = make([]N, cols)
+	}
+
+	for i := range rows {
+		for j := range cols {
+			mat[i][j] = randomSupplier()
+		}
+	}
+	return &Matrix[N]{
+		rows: rows,
+		cols: cols,
+		data: mat,
+	}
+}
+
+func Dot[T Number](u []T, v []T) T {
 	if len(u) != len(v) {
 		panic("Shape of U and V are not the same.")
 	}
@@ -55,6 +76,62 @@ func dot[T Number](u []T, v []T) T {
 		sum += u[i] * v[i]
 	}
 	return sum
+}
+
+// Transposes this matrix into another
+func (this *Matrix[T]) Transpose() *Matrix[T] {
+	transposed := make([][]T, this.cols)
+	for colIdx := range this.cols {
+		transposed = append(transposed, this.GetColumn(colIdx))
+	}
+	return &Matrix[T]{
+		rows: this.cols,
+		cols: this.rows,
+		data: transposed,
+	}
+}
+
+func (this *Matrix[T]) Add(other *Matrix[T]) *Matrix[T] {
+	if this.rows != other.rows || this.cols != other.cols {
+		panic("Matricies must have the same dimensions to add together")
+	}
+	mat := make([][]T, this.rows)
+	for i := range mat {
+		mat[i] = make([]T, this.cols)
+	}
+
+	for i := range this.rows {
+		for j := range this.cols {
+			mat[i][j] = this.Get(i, j) + other.Get(i, j)
+		}
+	}
+	return &Matrix[T]{
+		rows: this.rows,
+		cols: this.cols,
+		data: mat,
+	}
+
+}
+
+// Creates a constant matrix of the given value
+func Values[T Number](rows uint, cols uint, value T) *Matrix[T] {
+
+	matrix := make([][]T, rows)
+
+	for i := range matrix {
+		matrix[i] = make([]T, cols)
+	}
+
+	for i := range rows {
+		for j := range cols {
+			matrix[i][j] = value
+		}
+	}
+	return &Matrix[T]{
+		rows: rows,
+		cols: cols,
+		data: matrix,
+	}
 }
 
 func (this *Matrix[T]) Multiply(other *Matrix[T]) *Matrix[T] {
@@ -78,7 +155,7 @@ func (this *Matrix[T]) Multiply(other *Matrix[T]) *Matrix[T] {
 		for j := range otherCols {
 			row := this.GetRow(uint(i))
 			col := other.GetColumn(uint(j))
-			matrix[i][j] = dot(row, col)
+			matrix[i][j] = Dot(row, col)
 		}
 	}
 	return &Matrix[T]{
