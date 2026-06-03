@@ -1,4 +1,9 @@
-package goat 
+package goat
+
+import (
+	"fmt"
+	"strings"
+)
 
 type Number interface {
 	float64 | int64 | uint64
@@ -69,13 +74,11 @@ func (this *Matrix[T]) Multiply(other *Matrix[T]) *Matrix[T] {
 		matrix[i] = make([]T, otherCols)
 	}
 
-	for i := range len(matrix) {
-		for j := range len(matrix[0]) {
-			for range len(matrix[0]) {
-				col := this.GetColumn(uint(i))
-				row := other.GetRow(uint(j))
-				matrix[i][j] = dot(col, row)
-			}
+	for i := range thisRows {
+		for j := range otherCols {
+			row := this.GetRow(uint(i))
+			col := other.GetColumn(uint(j))
+			matrix[i][j] = dot(row, col)
 		}
 	}
 	return &Matrix[T]{
@@ -83,6 +86,63 @@ func (this *Matrix[T]) Multiply(other *Matrix[T]) *Matrix[T] {
 		cols: otherCols,
 		data: matrix,
 	}
+}
+
+func (this *Matrix[T]) String() string {
+	if this.rows == 0 || this.cols == 0 {
+		return "[]"
+	}
+
+	// Format every cell up front and track the widest entry per column.
+	cells := make([][]string, this.rows)
+	widths := make([]int, this.cols)
+	for r := range this.data {
+		cells[r] = make([]string, this.cols)
+		for c, val := range this.data[r] {
+			s := fmt.Sprintf("%v", val)
+			cells[r][c] = s
+			if len(s) > widths[c] {
+				widths[c] = len(s)
+			}
+		}
+	}
+
+	bracket := func(r int) (left, right string) {
+		n := len(cells)
+		switch {
+		case n == 1:
+			return "[", "]"
+		case r == 0:
+			return "⎡", "⎤"
+		case r == n-1:
+			return "⎣", "⎦"
+		default:
+			return "⎢", "⎥"
+		}
+	}
+
+	var b strings.Builder
+	for r, row := range cells {
+		left, right := bracket(r)
+		b.WriteString(left)
+		b.WriteByte(' ')
+		for c, s := range row {
+			if c > 0 {
+				b.WriteString("  ")
+			}
+			fmt.Fprintf(&b, "%*s", widths[c], s)
+		}
+		b.WriteByte(' ')
+		b.WriteString(right)
+		if r < len(cells)-1 {
+			b.WriteByte('\n')
+		}
+	}
+	return b.String()
+}
+
+func (this *Matrix[T]) Print() {
+	fmt.Println(this.String())
 }
 
 func (this *Matrix[T]) Get(row uint, col uint) T {
