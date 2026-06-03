@@ -23,6 +23,7 @@ func TestNANDGate(t *testing.T) {
 	assert.Equal(t, uint8(1), nn.NAND(0, 0))
 }
 
+// We can even compose the NAND gates into a XOR Gate (It is a universal model of computation)
 func TestXOR(t *testing.T) {
 	// 0 XOR 0 => 0
 	assert.Equal(t, uint8(0), nn.XOR(0, 0))
