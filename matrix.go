@@ -2,11 +2,12 @@ package goat
 
 import (
 	"fmt"
+	"iter"
 	"strings"
 )
 
 type Number interface {
-	float64 | int64 | uint64 | int
+	float64 | float32
 }
 
 type Vector[N Number] Matrix[N]
@@ -18,6 +19,9 @@ type Matrix[N Number] struct {
 }
 
 func (this *Matrix[T]) GetDimensions() (uint, uint) {
+	if len(this.data) != int(this.rows) || len(this.data[0]) != int(this.cols) {
+		panic("Invariant violated")
+	}
 	return this.rows, this.cols
 }
 
@@ -48,9 +52,21 @@ func (this *Matrix[T]) GetRow(idx uint) []T {
 	return this.data[idx]
 }
 
+func (this *Matrix[T]) GetValues() iter.Seq[T] {
+	return func(yield func(T) bool) {
+		for i := range this.rows {
+			for j := range this.cols {
+				if !yield(this.Get(i, j)) {
+					return
+				}
+			}
+		}
+	}
+}
+
 func GenerateRandomMatrix[N Number](rows uint, cols uint, randomSupplier func() N) *Matrix[N] {
 	mat := make([][]N, rows)
-	for i := range mat {
+	for i := range rows {
 		mat[i] = make([]N, cols)
 	}
 
@@ -82,7 +98,7 @@ func Dot[T Number](u []T, v []T) T {
 func (this *Matrix[T]) Transpose() *Matrix[T] {
 	transposed := make([][]T, this.cols)
 	for colIdx := range this.cols {
-		transposed = append(transposed, this.GetColumn(colIdx))
+		transposed[colIdx] = this.GetColumn(colIdx)
 	}
 	return &Matrix[T]{
 		rows: this.cols,
@@ -142,6 +158,7 @@ func (this *Matrix[T]) Multiply(other *Matrix[T]) *Matrix[T] {
 	otherCols := other.cols
 	// (m x n) x (n x m) => m x m
 	// In other words the cols of this matrix must match the rows of the other matrix
+
 	if thisCols != otherRows {
 		panic("Shape mismatch")
 	}

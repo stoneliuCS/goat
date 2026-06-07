@@ -13,9 +13,9 @@ const MAX_DIMS = 100
 const MAX_VALUE = 1000
 
 func TestCreate(t *testing.T) {
-	mat := matrix.CreateMatrix([][]int64{
-		[]int64{2, 2},
-		[]int64{2, 2},
+	mat := matrix.CreateMatrix([][]float64{
+		[]float64{2, 2},
+		[]float64{2, 2},
 	})
 	n, m := mat.GetDimensions()
 	assert.NotNil(t, mat)
@@ -24,15 +24,15 @@ func TestCreate(t *testing.T) {
 }
 
 func TestMultiply(t *testing.T) {
-	mat1 := matrix.CreateMatrix([][]int64{
-		[]int64{2, 2, 3},
-		[]int64{2, 2, 3},
+	mat1 := matrix.CreateMatrix([][]float64{
+		[]float64{2, 2, 3},
+		[]float64{2, 2, 3},
 	})
 
-	mat2 := matrix.CreateMatrix([][]int64{
-		[]int64{2, 2},
-		[]int64{2, 2},
-		[]int64{2, 3},
+	mat2 := matrix.CreateMatrix([][]float64{
+		[]float64{2, 2},
+		[]float64{2, 2},
+		[]float64{2, 3},
 	})
 
 	res := mat1.Multiply(mat2)
@@ -46,25 +46,25 @@ func TestMultiply(t *testing.T) {
 	 | 14 17 |
 	 | 14 17 |
 	*/
-	assert.Equal(t, int64(14), res.Get(0, 0))
-	assert.Equal(t, int64(17), res.Get(0, 1))
-	assert.Equal(t, int64(14), res.Get(1, 0))
-	assert.Equal(t, int64(17), res.Get(1, 1))
+	assert.Equal(t, float64(14), res.Get(0, 0))
+	assert.Equal(t, float64(17), res.Get(0, 1))
+	assert.Equal(t, float64(14), res.Get(1, 0))
+	assert.Equal(t, float64(17), res.Get(1, 1))
 }
 
 func TestMultiplyProp(t *testing.T) {
 	for range PROPERTY_RUNS {
 		randRow := uint(rand.IntN(MAX_DIMS))
 		randCol := uint(rand.IntN(MAX_DIMS))
-		randomSupplier := func() int {
+		randomSupplier := func() float64 {
 			if rand.Float32() <= 0.5 {
-				return rand.IntN(MAX_VALUE)
+				return rand.Float64() * MAX_VALUE
 			} else {
-				return -1 * rand.IntN(MAX_VALUE)
+				return -1 * rand.Float64() * MAX_VALUE
 			}
 		}
-		mat1 := matrix.GenerateRandomMatrix[int](randRow, randCol, randomSupplier)
-		mat2 := matrix.GenerateRandomMatrix[int](randCol, randRow, randomSupplier)
+		mat1 := matrix.GenerateRandomMatrix[float64](randRow, randCol, randomSupplier)
+		mat2 := matrix.GenerateRandomMatrix[float64](randCol, randRow, randomSupplier)
 		res := mat1.Multiply(mat2)
 		// Output is a square matrix
 		for i := range randRow {
@@ -75,4 +75,14 @@ func TestMultiplyProp(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestVectorTransposeMultiplication(t *testing.T) {
+	// (1 x 2) x (2 x 1) => 1 x 1 vector
+	u := matrix.CreateMatrix([][]float64{[]float64{1, 2}})
+	v := matrix.CreateMatrix([][]float64{[]float64{2}, []float64{1}})
+	res := u.Multiply(v)
+	rows, cols := res.GetDimensions()
+	assert.Equal(t, uint(1), rows)
+	assert.Equal(t, uint(1), cols)
 }
