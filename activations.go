@@ -2,7 +2,14 @@ package goat
 
 import "math"
 
-func Sigmoid[N Number](z *Vector[N]) *Vector[N] {
+type Activation[N Number] interface {
+	Apply(z *Vector[N]) *Vector[N]
+	Gradient(z *Vector[N]) *Vector[N]
+}
+
+type Sigmoid[N Number] struct{}
+
+func (this Sigmoid[N]) Apply(z *Vector[N]) *Vector[N] {
 	if z.cols != 1 {
 		panic("Input must be a vector")
 	}
@@ -15,4 +22,15 @@ func Sigmoid[N Number](z *Vector[N]) *Vector[N] {
 		cols: z.cols,
 		data: data,
 	}
+}
+
+func (this Sigmoid[N]) Gradient(z *Vector[N]) *Vector[N] {
+	// sigma'(x) = sigma(x)(1 - sigma(x))
+	n, m := z.GetDimensions()
+	s := this.Apply(z)
+	return s.HadamardMultiply(Values[N](n, m, 1).Subtract(s))
+}
+
+func SigmoidActivation[N Number]() Sigmoid[N] {
+	return Sigmoid[N]{}
 }

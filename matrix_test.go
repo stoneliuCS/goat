@@ -86,3 +86,20 @@ func TestVectorTransposeMultiplication(t *testing.T) {
 	assert.Equal(t, uint(1), rows)
 	assert.Equal(t, uint(1), cols)
 }
+
+func TestHadmardMultiply(t *testing.T) {
+	m1 := matrix.CreateMatrix([][]float64{
+		[]float64{1, 2},
+		[]float64{3, 4},
+	})
+	m2 := matrix.CreateMatrix([][]float64{
+		[]float64{5, 3},
+		[]float64{3, 6},
+	})
+
+	act := m1.HadamardMultiply(m2)
+	assert.Equal(t, 5.0, act.Get(0, 0))
+	assert.Equal(t, 6.0, act.Get(0, 1))
+	assert.Equal(t, 9.0, act.Get(1, 0))
+	assert.Equal(t, 24.0, act.Get(1, 1))
+}

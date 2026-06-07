@@ -133,6 +133,48 @@ func (this *Matrix[T]) Add(other *Matrix[T]) *Matrix[T] {
 
 }
 
+func (this *Matrix[N]) Scale(constant N) *Matrix[N] {
+	n, m := this.GetDimensions()
+
+	mat := make([][]N, this.rows)
+	for i := range mat {
+		mat[i] = make([]N, this.cols)
+	}
+
+	for i := range n {
+		for j := range m {
+			mat[i][j] = this.Get(i, j) * constant
+		}
+	}
+	return &Matrix[N]{
+		rows: this.rows,
+		cols: this.cols,
+		data: mat,
+	}
+}
+
+func (this *Matrix[T]) Subtract(other *Matrix[T]) *Matrix[T] {
+	if this.rows != other.rows || this.cols != other.cols {
+		panic("Matricies must have the same dimensions to add together")
+	}
+	mat := make([][]T, this.rows)
+	for i := range mat {
+		mat[i] = make([]T, this.cols)
+	}
+
+	for i := range this.rows {
+		for j := range this.cols {
+			mat[i][j] = this.Get(i, j) - other.Get(i, j)
+		}
+	}
+	return &Matrix[T]{
+		rows: this.rows,
+		cols: this.cols,
+		data: mat,
+	}
+
+}
+
 // Creates a constant matrix of the given value
 func Values[T Number](rows uint, cols uint, value T) *Matrix[T] {
 
@@ -150,6 +192,32 @@ func Values[T Number](rows uint, cols uint, value T) *Matrix[T] {
 	return &Matrix[T]{
 		rows: rows,
 		cols: cols,
+		data: matrix,
+	}
+}
+
+func (this *Matrix[N]) HadamardMultiply(other *Matrix[N]) *Matrix[N] {
+	this_n, this_m := this.GetDimensions()
+	other_n, other_m := other.GetDimensions()
+
+	if this_n != other_n || this_m != other_m {
+		panic("Hadamard Multiplication (Element-Wise) must have the same size matricies!")
+	}
+
+	matrix := make([][]N, this_n)
+
+	for i := range matrix {
+		matrix[i] = make([]N, this_m)
+	}
+
+	for i := range this_n {
+		for j := range this_m {
+			matrix[i][j] = this.Get(i, j) * other.Get(i, j)
+		}
+	}
+	return &Matrix[N]{
+		rows: this_n,
+		cols: this_m,
 		data: matrix,
 	}
 }
@@ -186,6 +254,7 @@ func (this *Matrix[T]) Multiply(other *Matrix[T]) *Matrix[T] {
 	}
 }
 
+// Method is AI Generated.
 func (this *Matrix[T]) String() string {
 	if this.rows == 0 || this.cols == 0 {
 		return "[]"
@@ -237,10 +306,6 @@ func (this *Matrix[T]) String() string {
 		}
 	}
 	return b.String()
-}
-
-func (this *Matrix[T]) Print() {
-	fmt.Println(this.String())
 }
 
 func (this *Matrix[T]) Get(row uint, col uint) T {

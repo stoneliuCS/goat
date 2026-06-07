@@ -14,10 +14,14 @@ func TestForwardPass(t *testing.T) {
 	var sampleInput *nn.Vector[float64] = nn.GenerateRandomMatrix(728, 1, func() float64 {
 		return rand.Float64() * 255 // grayscale values
 	})
-	network := nn.CreateNetwork(sizes, sampleInput)
+	activations := []nn.Activation[float64]{
+		nn.SigmoidActivation[float64](),
+		nn.SigmoidActivation[float64](),
+		nn.SigmoidActivation[float64](),
+	}
+	network := nn.CreateNetwork(sizes, activations)
 	// One forward pass through the network, all values should be squished between 0 and 1
-	network.Forward(nn.Sigmoid)
-	resultVector := network.GetOutput()
+	resultVector := network.Forward(sampleInput)
 
 	for val := range resultVector.GetValues() {
 		assert.GreaterOrEqual(t, 1.0, val)

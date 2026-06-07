@@ -37,8 +37,8 @@ func LoadMNIST[N Number](imagePath, labelPath string) ([]Sample[N], error) {
 		oneHot := make([]N, 10)
 		oneHot[labels[i]] = 1
 		samples[i] = Sample[N]{
-			Image: CreateVector(pixels),
-			Label: CreateVector(oneHot),
+			Image: CreateMatrix([][]N{pixels}),
+			Label: CreateMatrix([][]N{oneHot}),
 			Digit: labels[i],
 		}
 	}
@@ -84,10 +84,10 @@ func readImages[N Number](path string) ([][]byte, int, int, error) {
 	defer r.Close()
 
 	var header struct {
-		Magic  uint32
-		Count  uint32
-		Rows   uint32
-		Cols   uint32
+		Magic uint32
+		Count uint32
+		Rows  uint32
+		Cols  uint32
 	}
 	if err := binary.Read(r, binary.BigEndian, &header); err != nil {
 		return nil, 0, 0, err
