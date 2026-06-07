@@ -10,7 +10,7 @@ type Number interface {
 	float64 | float32
 }
 
-type Vector[N Number] Matrix[N]
+type Vector[N Number] = Matrix[N]
 
 type Matrix[N Number] struct {
 	rows uint
@@ -23,6 +23,10 @@ func (this *Matrix[T]) GetDimensions() (uint, uint) {
 		panic("Invariant violated")
 	}
 	return this.rows, this.cols
+}
+
+func (this *Matrix[N]) IsColumnVector() bool {
+	return this.cols == 1
 }
 
 func CreateMatrix[T Number](matrix [][]T) *Matrix[T] {

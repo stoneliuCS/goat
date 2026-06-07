@@ -6,11 +6,14 @@ import (
 )
 
 type Network[N Number] struct {
-	sizes   []uint // Represents the number of nodes in each layer.
-	layers  uint
-	biases  []*Matrix[N]
-	weights []*Matrix[N]
-	input   *Matrix[N]
+	sizes          []uint       // Represents the number of nodes in each layer.
+	layers         uint         // Layers not including the input layer.
+	biases         []*Vector[N] // Biases for each layer represented as column vectors
+	weights        []*Matrix[N]
+	input          *Vector[N]
+	output         *Vector[N]
+	activations    []*Vector[N] // a_l
+	preActivations []*Vector[N] // z_l
 }
 
 type Seed struct {
@@ -21,57 +24,59 @@ func (s Seed) Uint64() uint64 {
 	return s.val
 }
 
-func Sigmoid[N Number](z *Matrix[N]) *Matrix[N] {
-	if z.rows != 1 {
-		panic("Input must be a vector")
-	}
-	res := []N{}
-	for num := range z.GetValues() {
-		res = append(res, N(1/(1+math.Exp(float64(-1*num)))))
-	}
-	return &Matrix[N]{
-		rows: z.rows,
-		cols: z.cols,
-		data: [][]N{res},
-	}
-}
-
 // Creates a network initialized by the number of layers len(sizes), and the number of neurons per layer (sizes[i]).
-// The input is represented as a row vector.
-func CreateNetwork[N Number](sizes []uint, input *Matrix[N]) *Network[N] {
-	if input.cols != uint(sizes[0]) {
-		panic("Input of the network must match the dimensions of the sizes")
+// The input must be a column vector.
+func CreateNetwork[N Number](sizes []uint, input *Vector[N]) *Network[N] {
+	if !input.IsColumnVector() {
+		panic("Input must be a column vector")
 	}
-	biases := make([]*Matrix[N], len(sizes))
-	weights := make([]*Matrix[N], len(sizes))
-	var layers uint = uint(len(sizes))
-	randomSupplier := func() N {
-		return N(rand.Float64())
-	}
-	_, inputLength := input.GetDimensions()
+	var layers uint = uint(len(sizes)) - 1
+	biases := make([]*Matrix[N], layers)
+	weights := make([]*Matrix[N], layers)
+	zeroSupplier := func() N { return 0 }
 
-	for idx, layer_size := range sizes {
-		biases[idx] = GenerateRandomMatrix(1, layer_size, randomSupplier)
-		weights[idx] = GenerateRandomMatrix(inputLength, layer_size, randomSupplier)
+	for i, layer_size := range sizes[1:] {
+		idx := i + 1
+		fanIn := sizes[idx-1]
+		scale := math.Sqrt(1 / float64(fanIn))
+		weightSupplier := func() N {
+			return N(rand.NormFloat64() * scale)
+		}
+		biases[i] = GenerateRandomMatrix(1, layer_size, zeroSupplier).Transpose()
+		weights[i] = GenerateRandomMatrix(layer_size, fanIn, weightSupplier)
 	}
 
 	return &Network[N]{
-		sizes:   sizes,
-		layers:  layers,
-		biases:  biases,
-		weights: weights,
-		input:   input,
+		sizes:          sizes,
+		layers:         layers,
+		biases:         biases,
+		weights:        weights,
+		input:          input,
+		output:         CreateMatrix([][]N{make([]N, sizes[len(sizes)-1])}),
+		activations:    make([]*Vector[N], sizes[len(sizes)-1]),
+		preActivations: make([]*Vector[N], sizes[len(sizes)-1]),
 	}
 }
 
+func (this *Network[T]) GetOutput() *Vector[T] {
+	return this.output
+}
+
 // Performs a forward pass on all weights and biases on the current network with the given activation function.
-func (this *Network[T]) Forward(activation func(vector *Matrix[T]) *Matrix[T]) *Matrix[T] {
+func (this *Network[T]) Forward(activation func(vector *Vector[T]) *Vector[T]) {
 	var currentFeatures = this.input
 	for layerIdx := range this.layers {
 		biasVector := this.biases[layerIdx]
-		weightsVector := this.weights[layerIdx].Transpose()
-		sumVector := Values(biasVector.rows, biasVector.cols, currentFeatures.Multiply(weightsVector).Get(0, 0)) // This is the dot product
-		currentFeatures = activation(sumVector)
+		weights := this.weights[layerIdx]
+		z_l := weights.Multiply(currentFeatures).Add(biasVector)
+		this.preActivations[layerIdx] = z_l
+		a_l := activation(z_l)
+		this.activations[layerIdx] = a_l
+		currentFeatures = a_l
 	}
-	return currentFeatures
+	this.output = currentFeatures
+}
+
+func (this *Network[N]) Backpropogation(output *Vector[N], loss func(groundTruth *Vector[N], output *Vector[N])) {
+
 }
