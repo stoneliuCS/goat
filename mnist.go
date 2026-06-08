@@ -32,7 +32,7 @@ func LoadMNIST[N Number](imagePath, labelPath string) ([]Sample[N], error) {
 	for i := range images {
 		pixels := make([]N, rows*cols)
 		for j, p := range images[i] {
-			pixels[j] = N(p) / 255
+			pixels[j] = N(p / 255)
 		}
 		oneHot := make([]N, 10)
 		oneHot[labels[i]] = 1

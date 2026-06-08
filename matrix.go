@@ -7,7 +7,7 @@ import (
 )
 
 type Number interface {
-	float64 | float32
+	float64 | float32 | int32 | int64 | int8
 }
 
 type Vector[N Number] = Matrix[N]
@@ -27,6 +27,19 @@ func (this *Matrix[T]) GetDimensions() (uint, uint) {
 
 func (this *Matrix[N]) IsColumnVector() bool {
 	return this.cols == 1
+}
+
+func CreateColumnVector[T Number](v []T) *Vector[T] {
+	if len(v) == 0 {
+		panic("Cannot create an empty vector.")
+	}
+
+	mat := &Matrix[T]{
+		rows: 1,
+		cols: uint(len(v)),
+		data: [][]T{v},
+	}
+	return mat.Transpose()
 }
 
 func CreateMatrix[T Number](matrix [][]T) *Matrix[T] {

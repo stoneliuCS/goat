@@ -7,6 +7,7 @@ type Activation[N Number] interface {
 	Gradient(z *Vector[N]) *Vector[N]
 }
 
+// Sigmoid Activation
 type Sigmoid[N Number] struct{}
 
 func (this Sigmoid[N]) Apply(z *Vector[N]) *Vector[N] {
