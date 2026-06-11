@@ -64,3 +64,57 @@ func TestXorNetwork(t *testing.T) {
 		assert.Equal(t, uint(1), m)
 	}
 }
+
+func argmax(v *nn.Vector[float64]) int {
+	rows, _ := v.GetDimensions()
+	best, bestVal := 0, v.Get(0, 0)
+	for i := uint(1); i < rows; i++ {
+		if val := v.Get(i, 0); val > bestVal {
+			best, bestVal = int(i), val
+		}
+	}
+	return best
+}
+
+func TestMNISTDataset(t *testing.T) {
+	train, err := nn.LoadMNIST[float64]("data/train-images-idx3-ubyte.gz", "data/train-labels-idx1-ubyte.gz")
+	if err != nil {
+		t.Fatal(err)
+	}
+	test, err := nn.LoadMNIST[float64]("data/t10k-images-idx3-ubyte.gz", "data/t10k-labels-idx1-ubyte.gz")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	sizes := []uint{784, 30, 10} // 28*28 inputs -> hidden -> 10 digit classes
+	activations := []nn.Activation[float64]{
+		nn.SigmoidActivation[float64](),
+		nn.SigmoidActivation[float64](),
+	}
+	network := nn.CreateNetwork(sizes, activations)
+
+	const epochs, batchSize, eta = 5, 32, 3.0
+	loss := &nn.MSE[float64]{}
+
+	for e := 0; e < epochs; e++ {
+		rand.Shuffle(len(train), func(i, j int) { train[i], train[j] = train[j], train[i] })
+		for start := 0; start < len(train); start += batchSize {
+			end := min(start+batchSize, len(train))
+			batch := train[start:end]
+			inputs := make([]*nn.Vector[float64], len(batch))
+			targets := make([]*nn.Vector[float64], len(batch))
+			for i, s := range batch {
+				inputs[i], targets[i] = s.Image, s.Label
+			}
+			network.BatchTrain(inputs, targets, loss, eta)
+		}
+
+		correct := 0
+		for _, s := range test {
+			if argmax(network.Forward(s.Image)) == int(s.Digit) {
+				correct++
+			}
+		}
+		t.Logf("epoch %d: %d/%d = %.2f%%", e+1, correct, len(test), 100*float64(correct)/float64(len(test)))
+	}
+}
